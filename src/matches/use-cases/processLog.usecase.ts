@@ -38,113 +38,50 @@ export class ProcessLogUseCase {
         const killRepository = manager.getRepository(KillEntity);
         const matchPlayerRepository = manager.getRepository(MatchPlayerEntity);
 
+        const patterns: {
+          regex: RegExp;
+          handler: (line: string) => void | Promise<void>;
+        }[] = [
+          {
+            regex: /New match \d+ has started/,
+            handler: (line) => this.handleNewMatch(line, matchRepository),
+          },
+          {
+            regex: / - .+ killed .+ using .+/,
+            handler: (line) =>
+              this.handleKill(
+                line,
+                playerRepository,
+                matchPlayerRepository,
+                killRepository,
+                () => currentMatch,
+              ),
+          },
+          {
+            regex: / - <WORLD> killed .+ by .+/,
+            handler: (line) =>
+              this.handleWorldKill(
+                line,
+                playerRepository,
+                matchPlayerRepository,
+                () => currentMatch,
+              ),
+          },
+          {
+            regex: /Match \d+ has ended/,
+            handler: () => {
+              if (currentMatch) {
+                matches.push(currentMatch);
+                currentMatch = null;
+              }
+            },
+          },
+        ];
+
         for (const line of lines) {
-          if (line.includes('New match')) {
-            const matchId = line.match(/New match (\d+) has started/)?.[1];
-            if (matchId) {
-              currentMatch = matchRepository.create({
-                externalId: matchId,
-                players: [],
-                kills: [],
-                createdAt: new Date(),
-              });
-              await matchRepository.save(currentMatch);
-            }
-          } else if (line.includes('killed') && line.includes('using')) {
-            const killRegex = / - (.+) killed (.+) using (.+)/;
-            const [, killerName, victimName, weapon] =
-              line.match(killRegex) || [];
-
-            if (currentMatch && killerName && victimName && weapon) {
-              let killer: PlayerEntity | null = null;
-              if (killerName !== '<WORLD>') {
-                killer = await playerRepository.findOne({
-                  where: { name: killerName },
-                });
-                if (!killer) {
-                  killer = playerRepository.create({ name: killerName });
-                  await playerRepository.save(killer);
-                }
-              }
-
-              let victim = await playerRepository.findOne({
-                where: { name: victimName },
-              });
-              if (!victim) {
-                victim = playerRepository.create({ name: victimName });
-                await playerRepository.save(victim);
-              }
-
-              if (killer) {
-                let killerMatchPlayer = await matchPlayerRepository.findOne({
-                  where: { match: currentMatch, player: killer },
-                });
-                if (!killerMatchPlayer) {
-                  killerMatchPlayer = matchPlayerRepository.create({
-                    match: currentMatch,
-                    player: killer,
-                    kills: 0,
-                    deaths: 0,
-                  });
-                }
-                killerMatchPlayer.kills += 1;
-                await matchPlayerRepository.save(killerMatchPlayer);
-              }
-
-              let victimMatchPlayer = await matchPlayerRepository.findOne({
-                where: { match: currentMatch, player: victim },
-              });
-              if (!victimMatchPlayer) {
-                victimMatchPlayer = matchPlayerRepository.create({
-                  match: currentMatch,
-                  player: victim,
-                  kills: 0,
-                  deaths: 0,
-                });
-              }
-              victimMatchPlayer.deaths += 1;
-              await matchPlayerRepository.save(victimMatchPlayer);
-
-              const kill = killRepository.create({
-                match: currentMatch,
-                killer,
-                victim,
-                weapon,
-                timestamp: new Date(),
-              });
-              await killRepository.save(kill);
-            }
-          } else if (line.includes('<WORLD> killed') && line.includes('by')) {
-            const worldKillRegex = / - <WORLD> killed (.+) by (.+)/;
-            const [, victimName] = line.match(worldKillRegex) || [];
-            if (currentMatch && victimName) {
-              let victim = await playerRepository.findOne({
-                where: { name: victimName },
-              });
-              if (!victim) {
-                victim = playerRepository.create({ name: victimName });
-                await playerRepository.save(victim);
-              }
-
-              let victimMatchPlayer = await matchPlayerRepository.findOne({
-                where: { match: currentMatch, player: victim },
-              });
-              if (!victimMatchPlayer) {
-                victimMatchPlayer = matchPlayerRepository.create({
-                  match: currentMatch,
-                  player: victim,
-                  kills: 0,
-                  deaths: 0,
-                });
-              }
-              victimMatchPlayer.deaths += 1;
-              await matchPlayerRepository.save(victimMatchPlayer);
-            }
-          } else if (line.includes('Match') && line.includes('has ended')) {
-            if (currentMatch) {
-              matches.push(currentMatch);
-              currentMatch = null;
-            }
+          const matched = patterns.find((p) => p.regex.test(line));
+          if (matched) {
+            await matched.handler(line);
           }
         }
 
@@ -156,6 +93,127 @@ export class ProcessLogUseCase {
         throw new Error('Já existe um registro com o mesmo externalId.');
       }
       throw error;
+    }
+  }
+
+  private async handleNewMatch(
+    line: string,
+    matchRepository: Repository<MatchEntity>,
+  ) {
+    const matchId = line.match(/New match (\d+) has started/)?.[1];
+    if (matchId) {
+      const match = matchRepository.create({
+        externalId: matchId,
+        players: [],
+        kills: [],
+        createdAt: new Date(),
+      });
+      await matchRepository.save(match);
+    }
+  }
+
+  private async handleKill(
+    line: string,
+    playerRepository: Repository<PlayerEntity>,
+    matchPlayerRepository: Repository<MatchPlayerEntity>,
+    killRepository: Repository<KillEntity>,
+    getCurrent: () => MatchEntity | null,
+  ) {
+    const killRegex = / - (.+) killed (.+) using (.+)/;
+    const [, killerName, victimName, weapon] = line.match(killRegex) || [];
+    const currentMatch = getCurrent();
+    if (currentMatch && killerName && victimName && weapon) {
+      let killer: PlayerEntity | null = null;
+      if (killerName !== '<WORLD>') {
+        killer = await playerRepository.findOne({
+          where: { name: killerName },
+        });
+        if (!killer) {
+          killer = playerRepository.create({ name: killerName });
+          await playerRepository.save(killer);
+        }
+      }
+
+      let victim = await playerRepository.findOne({
+        where: { name: victimName },
+      });
+      if (!victim) {
+        victim = playerRepository.create({ name: victimName });
+        await playerRepository.save(victim);
+      }
+
+      if (killer) {
+        let killerMatchPlayer = await matchPlayerRepository.findOne({
+          where: { match: currentMatch, player: killer },
+        });
+        if (!killerMatchPlayer) {
+          killerMatchPlayer = matchPlayerRepository.create({
+            match: currentMatch,
+            player: killer,
+            kills: 0,
+            deaths: 0,
+          });
+        }
+        killerMatchPlayer.kills += 1;
+        await matchPlayerRepository.save(killerMatchPlayer);
+      }
+
+      let victimMatchPlayer = await matchPlayerRepository.findOne({
+        where: { match: currentMatch, player: victim },
+      });
+      if (!victimMatchPlayer) {
+        victimMatchPlayer = matchPlayerRepository.create({
+          match: currentMatch,
+          player: victim,
+          kills: 0,
+          deaths: 0,
+        });
+      }
+      victimMatchPlayer.deaths += 1;
+      await matchPlayerRepository.save(victimMatchPlayer);
+
+      const kill = killRepository.create({
+        match: currentMatch,
+        killer,
+        victim,
+        weapon,
+        timestamp: new Date(),
+      });
+      await killRepository.save(kill);
+    }
+  }
+
+  private async handleWorldKill(
+    line: string,
+    playerRepository: Repository<PlayerEntity>,
+    matchPlayerRepository: Repository<MatchPlayerEntity>,
+    getCurrent: () => MatchEntity | null,
+  ) {
+    const worldKillRegex = / - <WORLD> killed (.+) by (.+)/;
+    const [, victimName] = line.match(worldKillRegex) || [];
+    const currentMatch = getCurrent();
+    if (currentMatch && victimName) {
+      let victim = await playerRepository.findOne({
+        where: { name: victimName },
+      });
+      if (!victim) {
+        victim = playerRepository.create({ name: victimName });
+        await playerRepository.save(victim);
+      }
+
+      let victimMatchPlayer = await matchPlayerRepository.findOne({
+        where: { match: currentMatch, player: victim },
+      });
+      if (!victimMatchPlayer) {
+        victimMatchPlayer = matchPlayerRepository.create({
+          match: currentMatch,
+          player: victim,
+          kills: 0,
+          deaths: 0,
+        });
+      }
+      victimMatchPlayer.deaths += 1;
+      await matchPlayerRepository.save(victimMatchPlayer);
     }
   }
 }
