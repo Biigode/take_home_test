@@ -8,14 +8,15 @@ export class UploadService {
   constructor(private readonly processLogUseCase: ProcessLogUseCase) {}
 
   async processUploadedFile(file: Express.Multer.File) {
-    const filePath = path.join(__dirname, '../../../', file.path);
-    const content = await readFile(filePath, 'utf8');
+    try {
+      const filePath = path.join(__dirname, '../../../', file.path);
+      const content = await readFile(filePath, 'utf8');
 
-    const matches = this.processLogUseCase.execute(content);
-
-    return {
-      filename: file.filename,
-      matches,
-    };
+      const matches = await this.processLogUseCase.execute(content);
+      return matches;
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      throw new Error(error.message || 'Erro ao processar arquivo.');
+    }
   }
 }
