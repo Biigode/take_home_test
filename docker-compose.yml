@@ -23,6 +23,6 @@ services:
       DATABASE_NAME: nomad_test
     ports:
       - '3000:3000'
-    command: npm run start:prod
+    command: ./start.sh
 volumes:
   pgdata:

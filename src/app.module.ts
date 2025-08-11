@@ -1,11 +1,23 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MatchesController } from './matches/controller/matches.controller';
-import { MatchesModule } from './matches/matches.module';
+import { MatchesController } from './matches/controllers/matches.controller';
+import { KillEntity } from './matches/entities/kill.entity';
+import { MatchPlayerEntity } from './matches/entities/match-player.entity';
+import { MatchEntity } from './matches/entities/match.entity';
+import { PlayerEntity } from './matches/entities/player.entity';
 import { UploadService } from './matches/services/upload.service';
+import { GetMatchesUseCase } from './matches/use-cases/getMatches.usecase';
+import { GetRankingUseCase } from './matches/use-cases/getRanking.usecase';
 import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
+
 @Module({
   imports: [
+    TypeOrmModule.forFeature([
+      MatchEntity,
+      PlayerEntity,
+      MatchPlayerEntity,
+      KillEntity,
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST || 'localhost',
@@ -15,12 +27,16 @@ import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
       username: process.env.DATABASE_USER || 'postgres',
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'nomad_test',
-      entities: [],
+      entities: [MatchEntity, PlayerEntity, MatchPlayerEntity, KillEntity],
       synchronize: true,
     }),
-    MatchesModule,
   ],
   controllers: [MatchesController],
-  providers: [UploadService, ProcessLogUseCase],
+  providers: [
+    UploadService,
+    ProcessLogUseCase,
+    GetRankingUseCase,
+    GetMatchesUseCase,
+  ],
 })
 export class AppModule {}
