@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import { KillEntity } from '../entities/kill.entity';
 import { MatchPlayerEntity } from '../entities/match-player.entity';
 import { MatchEntity } from '../entities/match.entity';
 import { GetRankingUseCase } from './getRanking.usecase';
@@ -9,13 +10,16 @@ describe('GetRankingUseCase', () => {
   let matchPlayerRepository: jest.Mocked<
     Pick<Repository<MatchPlayerEntity>, 'find'>
   >;
+  let killRepository: jest.Mocked<Pick<Repository<KillEntity>, 'find'>>;
 
   beforeEach(() => {
     matchRepository = { findOne: jest.fn() };
     matchPlayerRepository = { find: jest.fn() };
+    killRepository = { find: jest.fn() };
     useCase = new GetRankingUseCase(
       matchRepository as unknown as Repository<MatchEntity>,
       matchPlayerRepository as unknown as Repository<MatchPlayerEntity>,
+      killRepository as unknown as Repository<KillEntity>,
     );
   });
 
@@ -56,6 +60,7 @@ describe('GetRankingUseCase', () => {
     ];
     matchPlayerRepository.find.mockResolvedValue(players);
 
+    killRepository.find.mockResolvedValue([]);
     const result = await useCase.execute('ext-1');
 
     expect(matchRepository.findOne).toHaveBeenCalledWith({
@@ -65,14 +70,16 @@ describe('GetRankingUseCase', () => {
       where: { match },
       relations: ['player'],
     });
-    expect(result).toEqual({
-      matchId: 'ext-1',
-      players: [
-        { name: 'Player 2', kills: 5, deaths: 1, killDeathRatio: 5 },
-        { name: 'Player 1', kills: 5, deaths: 2, killDeathRatio: 2.5 },
-        { name: 'Player 3', kills: 2, deaths: 0, killDeathRatio: 2 },
-      ],
-    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        matchId: 'ext-1',
+        players: [
+          { name: 'Player 2', kills: 5, deaths: 1, killDeathRatio: 5 },
+          { name: 'Player 1', kills: 5, deaths: 2, killDeathRatio: 2.5 },
+          { name: 'Player 3', kills: 2, deaths: 0, killDeathRatio: 2 },
+        ],
+      }),
+    );
   });
 
   it('should throw if match is not found', async () => {
