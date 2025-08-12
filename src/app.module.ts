@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatchesController } from './matches/controllers/matches.controller';
 import { KillEntity } from './matches/entities/kill.entity';
 import { MatchPlayerEntity } from './matches/entities/match-player.entity';
 import { MatchEntity } from './matches/entities/match.entity';
 import { PlayerEntity } from './matches/entities/player.entity';
+import { UploadCleanupService } from './matches/services/upload-cleanup.service';
 import { UploadService } from './matches/services/upload.service';
 import { GetGlobalRankingUseCase } from './matches/use-cases/getGlobalRanking.usecase';
 import { GetMatchesUseCase } from './matches/use-cases/getMatches.usecase';
@@ -31,6 +33,7 @@ import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
       entities: [MatchEntity, PlayerEntity, MatchPlayerEntity, KillEntity],
       synchronize: true,
     }),
+    ScheduleModule.forRoot(),
   ],
   controllers: [MatchesController],
   providers: [
@@ -39,6 +42,7 @@ import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
     GetRankingUseCase,
     GetMatchesUseCase,
     GetGlobalRankingUseCase,
+    UploadCleanupService,
   ],
 })
 export class AppModule {}
