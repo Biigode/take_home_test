@@ -1,0 +1,7 @@
+11/08/2025 14:00:00 - New match 55555555 has started
+11/08/2025 14:01:00 - Lucas killed Nick using AK47
+11/08/2025 14:01:10 - Lucas killed Bruno using AK47
+11/08/2025 14:01:20 - Lucas killed Rafael using AK47
+11/08/2025 14:01:30 - Lucas killed Gustavo using AK47
+11/08/2025 14:01:40 - Lucas killed Tiago using AK47
+11/08/2025 14:10:00 - Match 55555555 has ended
