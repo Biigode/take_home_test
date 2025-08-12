@@ -10,12 +10,14 @@ export const multerConfig = {
       callback(null, `${uniqueSuffix}${extname(file.originalname)}`);
     },
   }),
-  fileFilter: (req: any, file: Express.Multer.File, callback: Function) => {
+  fileFilter: (
+    req: any,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ): void => {
     if (extname(file.originalname).toLowerCase() !== '.txt') {
-      return callback(
-        new BadRequestException('Only .txt files are allowed!'),
-        false,
-      );
+      callback(new BadRequestException('Only .txt files are allowed!'), false);
+      return;
     }
     callback(null, true);
   },

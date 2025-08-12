@@ -6,6 +6,7 @@ import { MatchPlayerEntity } from './matches/entities/match-player.entity';
 import { MatchEntity } from './matches/entities/match.entity';
 import { PlayerEntity } from './matches/entities/player.entity';
 import { UploadService } from './matches/services/upload.service';
+import { GetGlobalRankingUseCase } from './matches/use-cases/getGlobalRanking.usecase';
 import { GetMatchesUseCase } from './matches/use-cases/getMatches.usecase';
 import { GetRankingUseCase } from './matches/use-cases/getRanking.usecase';
 import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
@@ -37,6 +38,7 @@ import { ProcessLogUseCase } from './matches/use-cases/processLog.usecase';
     ProcessLogUseCase,
     GetRankingUseCase,
     GetMatchesUseCase,
+    GetGlobalRankingUseCase,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,7 @@ import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../dtos/pagination-query.dto';
 import { multerConfig } from '../infrastructure/upload/multer.config';
 import { UploadService } from '../services/upload.service';
+import { GetGlobalRankingUseCase } from '../use-cases/getGlobalRanking.usecase';
 import { GetMatchesUseCase } from '../use-cases/getMatches.usecase';
 import { GetRankingUseCase } from '../use-cases/getRanking.usecase';
 
@@ -23,6 +24,7 @@ export class MatchesController {
     private readonly uploadService: UploadService,
     private readonly getRankingUseCase: GetRankingUseCase,
     private readonly getMatchesUseCase: GetMatchesUseCase,
+    private readonly getGlobalRankingUseCase: GetGlobalRankingUseCase,
   ) {}
 
   @Post('upload')
@@ -41,6 +43,7 @@ export class MatchesController {
   })
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     try {
+      if (!file) throw new BadRequestException('Arquivo não enviado.');
       return await this.uploadService.processUploadedFile(file);
     } catch (error: any) {
       throw new BadRequestException(
@@ -72,5 +75,10 @@ export class MatchesController {
   @Get(':matchId/ranking')
   async getRanking(@Param('matchId') matchId: string) {
     return this.getRankingUseCase.execute(matchId);
+  }
+
+  @Get('global-ranking')
+  async getGlobalRanking() {
+    return this.getGlobalRankingUseCase.execute();
   }
 }

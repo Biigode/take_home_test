@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { BadRequestException } from '@nestjs/common';
 
 import { UploadService } from '../services/upload.service';
+import { GetGlobalRankingUseCase } from '../use-cases/getGlobalRanking.usecase';
 import { GetMatchesUseCase } from '../use-cases/getMatches.usecase';
 import { GetRankingUseCase } from '../use-cases/getRanking.usecase';
 import { MatchesController } from './matches.controller';
@@ -10,6 +12,7 @@ describe('MatchesController', () => {
   let uploadService: UploadService;
   let getMatchesUseCase: GetMatchesUseCase;
   let getRankingUseCase: GetRankingUseCase;
+  let getGlobalRankingUseCase: GetGlobalRankingUseCase;
 
   beforeEach(() => {
     uploadService = {
@@ -17,10 +20,14 @@ describe('MatchesController', () => {
     } as unknown as UploadService;
     getMatchesUseCase = { execute: jest.fn() } as unknown as GetMatchesUseCase;
     getRankingUseCase = { execute: jest.fn() } as unknown as GetRankingUseCase;
+    getGlobalRankingUseCase = {
+      execute: jest.fn(),
+    } as unknown as GetGlobalRankingUseCase;
     controller = new MatchesController(
       uploadService,
       getRankingUseCase,
       getMatchesUseCase,
+      getGlobalRankingUseCase,
     );
   });
 
@@ -35,6 +42,15 @@ describe('MatchesController', () => {
 
     expect(uploadService.processUploadedFile).toHaveBeenCalledWith(fakeFile);
     expect(result).toEqual(fakeResult);
+  });
+
+  it('should throw BadRequestException if file is not sent', async () => {
+    await expect(controller.uploadFile(undefined as any)).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(controller.uploadFile(undefined as any)).rejects.toThrow(
+      'Arquivo não enviado.',
+    );
   });
 
   it('should throw BadRequestException if UploadService.processUploadedFile throws', async () => {
