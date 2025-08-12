@@ -69,10 +69,10 @@ describe('ProcessLogUseCase', () => {
     (matchRepository.manager.transaction as any) = transactionFn;
 
     useCase = new ProcessLogUseCase(
-      matchRepository as any,
-      playerRepository as any,
-      killRepository as any,
-      matchPlayerRepository as any,
+      matchRepository,
+      playerRepository,
+      killRepository,
+      matchPlayerRepository,
     );
   });
 
