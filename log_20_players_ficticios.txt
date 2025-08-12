@@ -1,0 +1,22 @@
+23/04/2025 10:00:00 - New match 8888888891234 has started
+23/04/2025 10:01:00 - Lucas killed Bruno using AK47
+23/04/2025 10:01:10 - Rafael killed Gustavo using M16
+23/04/2025 10:01:20 - Tiago killed Felipe using AK47
+23/04/2025 10:01:30 - André killed Diego using M16
+23/04/2025 10:01:40 - Igor killed Matheus using AK47
+23/04/2025 10:01:50 - Daniel killed Vinicius using M16
+23/04/2025 10:02:00 - Caio killed Rodrigo using AK47
+23/04/2025 10:02:10 - Leandro killed Eduardo using M16
+23/04/2025 10:02:20 - Fábio killed Alexandre using AK47
+23/04/2025 10:02:30 - Murilo killed Henrique using M16
+23/04/2025 10:02:40 - Bruno killed Lucas using AK47
+23/04/2025 10:02:50 - Gustavo killed Rafael using M16
+23/04/2025 10:03:00 - Felipe killed Tiago using AK47
+23/04/2025 10:03:10 - Diego killed André using M16
+23/04/2025 10:03:20 - Matheus killed Igor using AK47
+23/04/2025 10:03:30 - Vinicius killed Daniel using M16
+23/04/2025 10:03:40 - Rodrigo killed Caio using AK47
+23/04/2025 10:03:50 - Eduardo killed Leandro using M16
+23/04/2025 10:04:00 - Alexandre killed Fábio using AK47
+23/04/2025 10:04:10 - Henrique killed Murilo using M16
+23/04/2025 10:05:00 - Match 8888888891234 has ended
