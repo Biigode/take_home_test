@@ -44,7 +44,9 @@ export class ProcessLogUseCase {
         }[] = [
           {
             regex: /New match \d+ has started/,
-            handler: (line) => this.handleNewMatch(line, matchRepository),
+            handler: async (line) => {
+              currentMatch = await this.handleNewMatch(line, matchRepository);
+            },
           },
           {
             regex: / - .+ killed .+ using .+/,
@@ -99,7 +101,7 @@ export class ProcessLogUseCase {
   private async handleNewMatch(
     line: string,
     matchRepository: Repository<MatchEntity>,
-  ) {
+  ): Promise<MatchEntity | null> {
     const matchId = line.match(/New match (\d+) has started/)?.[1];
     if (matchId) {
       const match = matchRepository.create({
@@ -109,7 +111,9 @@ export class ProcessLogUseCase {
         createdAt: new Date(),
       });
       await matchRepository.save(match);
+      return match;
     }
+    return null;
   }
 
   private async handleKill(
@@ -123,6 +127,13 @@ export class ProcessLogUseCase {
     const [, killerName, victimName, weapon] = line.match(killRegex) || [];
     const currentMatch = getCurrent();
     if (currentMatch && killerName && victimName && weapon) {
+      await this.validateMaxPlayers(
+        currentMatch,
+        matchPlayerRepository,
+        killerName,
+        victimName,
+      );
+
       let killer: PlayerEntity | null = null;
       if (killerName !== '<WORLD>') {
         killer = await playerRepository.findOne({
@@ -193,6 +204,13 @@ export class ProcessLogUseCase {
     const [, victimName] = line.match(worldKillRegex) || [];
     const currentMatch = getCurrent();
     if (currentMatch && victimName) {
+      await this.validateMaxPlayers(
+        currentMatch,
+        matchPlayerRepository,
+        undefined,
+        victimName,
+      );
+
       let victim = await playerRepository.findOne({
         where: { name: victimName },
       });
@@ -214,6 +232,33 @@ export class ProcessLogUseCase {
       }
       victimMatchPlayer.deaths += 1;
       await matchPlayerRepository.save(victimMatchPlayer);
+    }
+  }
+
+  private async validateMaxPlayers(
+    match: MatchEntity,
+    matchPlayerRepository: Repository<MatchPlayerEntity>,
+    killerName?: string,
+    victimName?: string,
+  ) {
+    const matchPlayers = await matchPlayerRepository.find({
+      where: { match },
+      relations: ['player'],
+    });
+    const uniquePlayerNames = new Set(matchPlayers.map((mp) => mp.player.name));
+    let newCount = uniquePlayerNames.size;
+    if (
+      killerName &&
+      killerName !== '<WORLD>' &&
+      !uniquePlayerNames.has(killerName)
+    ) {
+      newCount++;
+    }
+    if (victimName && !uniquePlayerNames.has(victimName)) {
+      newCount++;
+    }
+    if (newCount > 20) {
+      throw new Error('Não é permitido mais que 20 jogadores em uma partida.');
     }
   }
 }
